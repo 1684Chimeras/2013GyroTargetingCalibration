@@ -13,16 +13,17 @@ import edu.wpi.first.wpilibj.Gyro;
 public class GyroConfig {
     Gyro g;
     double sensitivity;
+    final double proportinalConstant = 1/2.49;
     GyroConfig(int channel){
         g = new Gyro(channel);
         sensitivity = 1;
         g.setSensitivity(1);
     }
     double getAngle(){
-        return g.getAngle();
+        return g.getAngle() * proportinalConstant;
     }
     double getSpins(){
-        return g.getAngle() / 360;
+        return getAngle();
     }
     void setSensitivity(double sense){
         sensitivity = sense;

@@ -10,6 +10,7 @@ package edu.wpi.first.wpilibj.templates;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -32,12 +33,18 @@ public class RobotTemplate extends IterativeRobot {
     static GyroConfig g;
     static Targeting t;
     static Joystick j;
+    static Solenoid armup;
+    static Solenoid armdown;
+    static Solenoid armpin;
     static SpinFiveTimes spin;
     static TargetingAutomaticCalibration tac;
     static String sensKey = "Sensitivity";
     static String valKey = "Value";
     public void robotInit() {
         Scheduler.getInstance().enable();
+        armup = new Solenoid(1,5);
+        armdown = new Solenoid(1,4);
+        armpin = new Solenoid(1,6);
         d = new DriveTrain(1,2,2,3,4,5);
         g = new GyroConfig(2);
         t = new Targeting(NetworkTable.getTable("zcv"),g,d);
@@ -49,6 +56,7 @@ public class RobotTemplate extends IterativeRobot {
         SmartDashboard.putData(new ResetGyro());
         SmartDashboard.putNumber(sensKey, 1);
         SmartDashboard.putNumber(valKey, 0);
+        SmartDashboard.putNumber("Spin", 5);
         
     }
     private static class cbase extends Command{
@@ -78,7 +86,8 @@ public class RobotTemplate extends IterativeRobot {
             super("Calculate Sensitivty");
         }
         protected boolean isFinished(){
-            g.setSensitivity(1 / g.getAngle());
+            g.setSensitivity(1 - (1 / g.getAngle()));
+            SmartDashboard.putNumber(sensKey, g.getSensitivity());
             return true;
             
         }
@@ -96,7 +105,7 @@ public class RobotTemplate extends IterativeRobot {
     }
     public static class SpinFiveTimes extends cbase{
         SpinFiveTimes(){
-            super("Spin Five Times");
+            super("Spin");
         }
         protected void execute() {
             
@@ -104,8 +113,12 @@ public class RobotTemplate extends IterativeRobot {
          }
 
         protected boolean isFinished() {
-            
-            return g.getSpins() >= 4.9;
+            try {
+            return g.getSpins() >= SmartDashboard.getNumber("Spin", 5) - 0.1;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
          }
     }
     /**
@@ -121,6 +134,24 @@ public class RobotTemplate extends IterativeRobot {
     double prev = 0;
     boolean wasPressed = false;
     public void teleopPeriodic() {
+        if (j.getRawButton(3)) {
+            armup.set(true);
+        }else{
+            armup.set(false);
+        }
+        
+        if (j.getRawButton(4)) {
+            armdown.set(true);
+        }else{
+            armdown.set(false);
+        }
+        
+        if (j.getRawButton(5)) {
+            armpin.set(true);
+        }else{
+            armpin.set(false);
+        }
+        
         if(!spin.isRunning()){
             if(j.getRawButton(1)){
                 t.run();
@@ -130,7 +161,7 @@ public class RobotTemplate extends IterativeRobot {
                 }
                 tac.run();
             }else{
-                d.arcade(j.getRawAxis(1), j.getRawAxis(2));
+                d.arcade(j.getRawAxis(2), j.getRawAxis(1));
             }
         }
         wasPressed = j.getRawButton(2);
